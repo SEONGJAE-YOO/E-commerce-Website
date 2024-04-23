@@ -3,6 +3,7 @@ import { Routes, Route, BrowserRouter } from 'react-router-dom'; // Import the '
 import Login from './views/auth/Login'; // Import the 'Login' component.
 import Register from './views/auth/Register'; // Import the 'Register' component.
 import Logout from './views/auth/Logout'; // Import the 'Logout' component.
+import ForgotPassword from './views/auth/ForgotPassword'; // Import the 'ForgotPassword' component.
 
 function App() { // Define the main 'App' component.
   const [count, setCount] = useState(0)
@@ -13,6 +14,7 @@ function App() { // Define the main 'App' component.
         <Route path="/login" element={<Login />} />
         <Route path='/register' element={<Register />} />      
         <Route path='/logout' element={<Logout />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
       </Routes>
     </BrowserRouter> 
   )
