@@ -1,5 +1,6 @@
 # Restframework
 import random
+from requests import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 # Serializers
 from userauths.serializer import (
@@ -7,6 +8,7 @@ from userauths.serializer import (
     RegisterSerializer,
 )
 from rest_framework import generics
+from rest_framework import status
 # Models
 from userauths.models import User
 from rest_framework.permissions import AllowAny
@@ -17,6 +19,8 @@ from django.template.loader import render_to_string
 from django.core.mail import EmailMultiAlternatives
 from django.conf import settings
 # This code defines a DRF View class called MyTokenObtainPairView, which inherits from TokenObtainPairView.
+
+
 class MyTokenObtainPairView(TokenObtainPairView):
     # Here, it specifies the serializer class to be used with this view.
     serializer_class = MyTokenObtainPairSerializer
@@ -36,6 +40,7 @@ def generate_numeric_otp(length=7):
         otp = ''.join([str(random.randint(0, 9)) for _ in range(length)])
         return otp
 
+
 class PasswordEmailVerify(generics.RetrieveAPIView):
     permission_classes = (AllowAny,)
     serializer_class = UserSerializer
@@ -46,16 +51,62 @@ class PasswordEmailVerify(generics.RetrieveAPIView):
         
         if user:
             user.otp = generate_numeric_otp()
-            user.save()
-            
             uidb64 = user.pk
-            otp = user.otp
             
-            link = f"http://localhost:5173/create-new-password?otp={otp}&uidb64={uidb64}"
-            
-            # send email
-                       
+             # Generate a token and include it in the reset link sent via email
+            refresh = RefreshToken.for_user(user)
+            reset_token = str(refresh.access_token)
 
+            # Store the reset_token in the user model for later verification
+            user.reset_token = reset_token
+            user.save()
+
+            link = f"http://localhost:5173/create-new-password?otp={user.otp}&uidb64={uidb64}&reset_token={reset_token}"
+            
+            merge_data = {
+                'link': link, 
+                'username': user.username, 
+            }
+            subject = f"Password Reset Request"
+            text_body = render_to_string("email/password_reset.txt", merge_data)
+            html_body = render_to_string("email/password_reset.html", merge_data)
+            
+            msg = EmailMultiAlternatives(
+                subject=subject, from_email=settings.FROM_EMAIL,
+                to=[user.email], body=text_body
+            )
+            msg.attach_alternative(html_body, "text/html")
+            msg.send()
         return user
     
+
+
+
+class PasswordChangeView(generics.CreateAPIView):
+    permission_classes = (AllowAny,)
+    serializer_class = UserSerializer
     
+    def create(self, request, *args, **kwargs):
+        payload = request.data
+        
+        otp = payload['otp']
+        uidb64 = payload['uidb64']
+        reset_token = payload['reset_token']
+        password = payload['password']
+
+        print("otp ======", otp)
+        print("uidb64 ======", uidb64)
+        print("reset_token ======", reset_token)
+        print("password ======", password)
+
+        user = User.objects.get(id=uidb64, otp=otp)
+        if user:
+            user.set_password(password)
+            user.otp = ""
+            user.reset_token = ""
+            user.save()
+
+            
+            return Response( {"message": "Password Changed Successfully"}, status=status.HTTP_201_CREATED)
+        else:
+            return Response( {"message": "An Error Occured"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
