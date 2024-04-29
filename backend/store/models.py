@@ -6,6 +6,8 @@ from django.utils.text import slugify
 from django.utils import timezone
 from django.utils.html import mark_safe
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.dispatch import receiver
+from django.db.models.signals import post_save
 
 PAYMENT_STATUS = (
     ("paid", "Paid"),
@@ -41,6 +43,16 @@ DELIVERY_STATUS = (
     ("Returning", 'Returning'),
     ("Returned", 'Returned'),
 )
+
+
+RATING = (
+    ( 1,  "★☆☆☆☆"),
+    ( 2,  "★★☆☆☆"),
+    ( 3,  "★★★☆☆"),
+    ( 4,  "★★★★☆"),
+    ( 5,  "★★★★★"),
+)
+
 
 # Model for Product Categories
 class Category(models.Model):
@@ -109,6 +121,13 @@ class Product(models.Model):
     def __str__(self):
         return self.title
     
+    def product_rating(self):
+        product_rating = Review.objects.filter(product=self).aggregate(avg_rating=models.Avg("rating"))
+        return product_rating["avg_rating"]
+    
+    def save(self, *args, **kwargs):
+        self.rating = self.product_rating()
+        super(Product, self).save(*args, **kwargs)
 class Gallery(models.Model):
     id = models.BigAutoField(help_text="Gallery ID", primary_key=True)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
@@ -339,3 +358,109 @@ class DeliveryCouriers(models.Model):
     
     def __str__(self):
         return self.name
+
+class ProductFaq(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    email = models.EmailField(null=True, blank=True)
+    question = models.CharField(max_length=1000)
+    answer = models.TextField(null=True, blank=True)
+    active = models.BooleanField(default=False)
+    date = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return self.question
+    
+    class Meta:
+        verbose_name_plural = "Product FAQs"
+        ordering = ["-date"]
+    
+
+# Define a model for Reviews
+class Review(models.Model):
+    # A foreign key relationship to the User model with SET_NULL option, allowing null and blank values
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, blank=True, null=True)
+    # A foreign key relationship to the Product model with SET_NULL option, allowing null and blank values, and specifying a related name
+    product = models.ForeignKey(Product, on_delete=models.SET_NULL, blank=True, null=True, related_name="reviews")
+    # Text field for the review content
+    review = models.TextField()
+    # Field for a reply with max length 1000, allowing null and blank values
+    reply = models.CharField(null=True, blank=True, max_length=1000)
+    # Integer field for rating with predefined choices
+    rating = models.IntegerField(choices=RATING, default=None)
+    # Boolean field for the active status
+    active = models.BooleanField(default=False)
+    # Many-to-many relationships with User model for helpful and not helpful actions
+    helpful = models.ManyToManyField(User, blank=True, related_name="helpful")
+    not_helpful = models.ManyToManyField(User, blank=True, related_name="not_helpful")
+    # Date and time field
+    date = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        verbose_name_plural = "Reviews & Rating"
+        ordering = ["-date"]
+        
+    # Method to return a string representation of the object
+    def __str__(self):
+        if self.product:
+            return self.product.title
+        else:
+            return "Review"
+        
+    # Method to get the rating value
+    def get_rating(self):
+        return self.rating
+    
+    def profile(self):
+        return Profile.objects.get(user=self.user)
+    
+@receiver(post_save, sender=Review)
+def update_product_rating(sender, instance, **kwargs):
+    if instance.product:
+        instance.product.save()
+        
+# Define a model for Wishlist
+class Wishlist(models.Model):
+    # A foreign key relationship to the User model with CASCADE deletion
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    # A foreign key relationship to the Product model with CASCADE deletion, specifying a related name
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="wishlist")
+    # Date and time field
+    date = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        verbose_name_plural = "Wishlist"
+    
+    # Method to return a string representation of the object
+    def __str__(self):
+        if self.product.title:
+            return self.product.title
+        else:
+            return "Wishlist"
+        
+# Define a model for Notification
+class Notification(models.Model):
+    # A foreign key relationship to the User model 
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    # A foreign key relationship to the Vendor model 
+    vendor = models.ForeignKey(Vendor, on_delete=models.SET_NULL, null=True, blank=True)
+    # A foreign key relationship to the CartOrder model 
+    order = models.ForeignKey(CartOrder, on_delete=models.SET_NULL, null=True, blank=True)
+    # A foreign key relationship to the CartOrderItem model 
+    order_item = models.ForeignKey(CartOrderItem, on_delete=models.SET_NULL, null=True, blank=True)
+    # Is read Boolean Field
+    seen = models.BooleanField(default=False)
+    # Date and time field
+    date = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        verbose_name_plural = "Notification"
+    
+    # Method to return a string representation of the object
+    def __str__(self):
+        if self.order:
+            return self.order.oid
+        else:
+            return "Notification"
+        
+        
