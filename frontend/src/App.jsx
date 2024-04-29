@@ -10,6 +10,7 @@ import StoreHeader from './views/base/StoreHeader';
 import StoreFooter from './views/base/StoreFooter';
 // import MainWrapper from './layouts/MainWrapper';
 
+import Products from './views/store/Products';
 
 function App() { // Define the main 'App' component.
   const [count, setCount] = useState(0)
@@ -24,6 +25,7 @@ function App() { // Define the main 'App' component.
             <Route path='/logout' element={<Logout />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/create-new-password" element={<CreatePassword />} />
+            <Route path="/products" element={<Products />} />
           </Routes>
       <StoreFooter />
     </BrowserRouter> 
