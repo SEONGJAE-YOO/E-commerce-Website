@@ -40,7 +40,7 @@ class User(AbstractUser):
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    image = models.ImageField(upload_to='accounts/users', default='default/default-user.jpg', null=True, blank=True)
+    image = models.ImageField(upload_to='accounts/profile', default='media/default/default-user.jpg', null=True, blank=True)
     full_name = models.CharField(max_length=1000, null=True, blank=True)
     about = models.TextField( null=True, blank=True)
     
@@ -50,7 +50,6 @@ class Profile(models.Model):
     state = models.CharField(max_length=500, null=True, blank=True)
     address = models.CharField(max_length=1000, null=True, blank=True)
     newsletter = models.BooleanField(default=False)
-    # wishlist = models.ManyToManyField("store.Product", blank=True)
     type = models.CharField(max_length=500, choices=GENDER, null=True, blank=True)
     date = models.DateTimeField(auto_now_add=True, null=True, blank=True)
     pid = ShortUUIDField(unique=True, length=10, max_length=20, alphabet="abcdefghijklmnopqrstuvxyz")
