@@ -70,3 +70,50 @@ class Product(models.Model):
         
     def __str__(self):
         return self.title
+    
+class Gallery(models.Model):
+    id = models.BigAutoField(help_text="Gallery ID", primary_key=True)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    image = models.FileField(upload_to="gallery", default="gallery.jpg")
+    active = models.BooleanField(default=True)
+    date = models.DateTimeField(auto_now_add=True)
+    gid = ShortUUIDField(unique=True, length=10, alphabet="abcdefghijklmnopqrstuvxyz")
+    
+    def __str__(self):
+        return self.product.title
+    
+    class Meta:
+        verbose_name_plural = "Product Images"
+    
+class Specification(models.Model):
+    id = models.BigAutoField(help_text="Specification ID", primary_key=True)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    title = models.CharField(max_length=100)
+    content = models.CharField(max_length=500)
+    date = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return self.title
+    
+class Size(models.Model):
+    id = models.BigAutoField(help_text="Size ID", primary_key=True)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    name = models.CharField(max_length=100)
+    price = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    date = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return self.name
+    
+class Color(models.Model):
+    id = models.BigAutoField(help_text="Color ID", primary_key=True)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    name = models.CharField(max_length=100)
+    color_code = models.CharField(max_length=100)
+    date = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return self.name
+    
+    
+    
