@@ -63,20 +63,20 @@ class PasswordEmailVerify(generics.RetrieveAPIView):
 
             link = f"http://localhost:5173/create-new-password?otp={user.otp}&uidb64={uidb64}&reset_token={reset_token}"
             
-            merge_data = {
-                'link': link, 
-                'username': user.username, 
-            }
-            subject = f"Password Reset Request"
-            text_body = render_to_string("email/password_reset.txt", merge_data)
-            html_body = render_to_string("email/password_reset.html", merge_data)
+            # merge_data = {
+            #     'link': link, 
+            #     'username': user.username, 
+            # }
+            # subject = f"Password Reset Request"
+            # text_body = render_to_string("email/password_reset.txt", merge_data)
+            # html_body = render_to_string("email/password_reset.html", merge_data)
             
-            msg = EmailMultiAlternatives(
-                subject=subject, from_email=settings.FROM_EMAIL,
-                to=[user.email], body=text_body
-            )
-            msg.attach_alternative(html_body, "text/html")
-            msg.send()
+            # msg = EmailMultiAlternatives(
+            #     subject=subject, from_email=settings.FROM_EMAIL,
+            #     to=[user.email], body=text_body
+            # )
+            # msg.attach_alternative(html_body, "text/html")
+            # msg.send()
         return user
     
 
