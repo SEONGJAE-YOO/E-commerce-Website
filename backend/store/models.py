@@ -479,4 +479,16 @@ class Notification(models.Model):
         else:
             return "Notification"
         
-        
+
+class Tax(models.Model):
+    country = models.CharField(max_length=100)
+    rate = models.IntegerField(default=5, help_text="Tax rate in percentage")
+    active = models.BooleanField(default=True)
+    date = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self) -> str:
+        return self.country
+    
+    class Meta:
+        verbose_name_plural = "Taxes"
+        ordering = ["country"]
